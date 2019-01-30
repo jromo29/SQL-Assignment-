@@ -402,3 +402,273 @@ having A.country = "Canada";
 -- 7d. Sales have been lagging among young families, and you wish to target all family movies for a promotion. 
 -- Identify all movies categorized as family films.
 
+use sakila;
+
+select * from category;
+
+select * from film_category;
+
+
+select film_category.film_id, film_category.category_id, category.category_id, category.name from category
+inner join film_category on
+category.category_id = film_category.category_id;
+
+-- Final Answer
+select FilmType.film_id, FilmType.name, film.title from
+(
+select film_category.film_id, film_category.category_id, category.name from category
+inner join film_category on
+category.category_id = film_category.category_id) as FilmType
+inner join film on 
+film.film_id = FilmType.film_id
+having name = "FAMILY";
+
+-- 7e. Display the most frequently rented movies in descending order.
+
+select film.film_id, film.title, inventory.inventory_id from inventory
+inner join film on
+film.film_id = inventory.film_id;
+
+
+
+select rental.rental_date, FilmInfo.film_id, FilmInfo.title from
+(
+select film.film_id, film.title, inventory.inventory_id from inventory
+inner join film on
+film.film_id = inventory.film_id) as FilmInfo
+inner join rental on
+rental.inventory_id = FilmInfo.inventory_id;
+
+
+-- Final Answer
+select FilmInfo.film_id, FilmInfo.title, count(rental.rental_date) as RentalCount from
+(
+select film.film_id, film.title, inventory.inventory_id from inventory
+inner join film on
+film.film_id = inventory.film_id) as FilmInfo
+inner join rental on
+rental.inventory_id = FilmInfo.inventory_id
+group by FilmInfo.film_id
+order by RentalCount desc;
+
+
+-- 7f. Write a query to display how much business, in dollars, each store brought in.
+
+select * from payment;
+
+select payment.amount, payment.rental_id, rental.inventory_id from rental
+inner join payment on
+payment.rental_id = rental.rental_id;
+
+
+select inventory.store_id, RentalInfo.amount, RentalInfo.inventory_id from
+(
+select payment.amount, payment.rental_id, rental.inventory_id from rental
+inner join payment on
+payment.rental_id = rental.rental_id) as RentalInfo
+inner join inventory on
+inventory.inventory_id = RentalInfo.inventory_id;
+
+
+select inventory.store_id, RentalInfo.amount, RentalInfo.inventory_id from
+(
+select payment.amount, payment.rental_id, rental.inventory_id from rental
+inner join payment on
+payment.rental_id = rental.rental_id) as RentalInfo
+inner join inventory on
+inventory.inventory_id = RentalInfo.inventory_id;
+
+
+select StoreInfo.store_id, store.address_id, StoreInfo.amount from
+(
+	select inventory.store_id, RentalInfo.amount, RentalInfo.inventory_id from
+
+		(
+		select payment.amount, payment.rental_id, rental.inventory_id from rental
+		inner join payment on
+		payment.rental_id = rental.rental_id) as RentalInfo
+
+	inner join inventory on
+	inventory.inventory_id = RentalInfo.inventory_id) as StoreInfo
+
+inner join store on
+store.store_id = StoreInfo.store_id;
+
+
+-- Final Answer
+select StoreAmount.store_id, address.address, sum(StoreAmount.amount) as Gross_Sales from
+(
+	select StoreInfo.store_id, store.address_id, StoreInfo.amount from
+	(
+		select inventory.store_id, RentalInfo.amount, RentalInfo.inventory_id from
+
+			(
+			select payment.amount, payment.rental_id, rental.inventory_id from rental
+			inner join payment on
+			payment.rental_id = rental.rental_id) as RentalInfo
+
+		inner join inventory on
+		inventory.inventory_id = RentalInfo.inventory_id) as StoreInfo
+
+	inner join store on
+	store.store_id = StoreInfo.store_id) as StoreAmount
+
+inner join address on 
+address.address_id = StoreAmount.address_id
+group by StoreAmount.store_id;
+
+
+-- 7g. Write a query to display for each store its store ID, city, and country.
+
+select store.store_id, address.city_id from address
+inner join store on
+store.address_id = address.address_id;
+
+
+select AddressInfo.store_id, AddressInfo.city_id, city.city, city.country_id from
+(
+	select store.store_id, address.city_id from address
+	inner join store on
+	store.address_id = address.address_id
+) as AddressInfo
+ 
+ inner join city on 
+ city.city_id = AddressInfo.city_id;
+ 
+-- Final Answer
+
+select CityInfo.store_id, CityInfo.city, country.country from
+(
+	select AddressInfo.store_id, AddressInfo.city_id, city.city, city.country_id from
+	(
+		select store.store_id, address.city_id from address
+		inner join store on
+		store.address_id = address.address_id
+	) as AddressInfo
+ 
+	inner join city on 
+	city.city_id = AddressInfo.city_id
+
+) as CityInfo
+inner join country on
+country.country_id = CityInfo.country_id;
+
+
+-- 7h. List the top five genres in gross revenue in descending order. 
+-- (Hint: you may need to use the following tables: category, film_category, inventory, payment, and rental.)
+
+
+select rental.rental_id, rental.inventory_id, payment.amount from payment
+inner join rental on
+rental.rental_id = payment.rental_id;
+ 
+select RentalInfo.inventory_id, inventory.film_id, RentalInfo.amount from
+( 
+select rental.rental_id, rental.inventory_id, payment.amount from payment
+inner join rental on
+rental.rental_id = payment.rental_id
+) as RentalInfo
+inner join inventory on
+inventory.inventory_id = RentalInfo.inventory_id;
+
+
+
+select film_category.category_id, FilmInfo.amount from
+(
+select RentalInfo.inventory_id, inventory.film_id, RentalInfo.amount from
+( 
+select rental.rental_id, rental.inventory_id, payment.amount from payment
+inner join rental on
+rental.rental_id = payment.rental_id
+) as RentalInfo
+inner join inventory on
+inventory.inventory_id = RentalInfo.inventory_id
+)as FilmInfo
+inner join film_category on
+film_category.film_id = FilmInfo.film_id;
+
+
+
+select category.category_id, category.name, GenreAmounts.amount from
+(
+select film_category.category_id, FilmInfo.amount from
+(
+select RentalInfo.inventory_id, inventory.film_id, RentalInfo.amount from
+( 
+select rental.rental_id, rental.inventory_id, payment.amount from payment
+inner join rental on
+rental.rental_id = payment.rental_id
+) as RentalInfo
+inner join inventory on
+inventory.inventory_id = RentalInfo.inventory_id
+)as FilmInfo
+inner join film_category on
+film_category.film_id = FilmInfo.film_id
+) as GenreAmounts
+inner join category on
+category.category_id = GenreAmounts.category_id;
+
+
+-- Final Answer
+
+select category.category_id, category.name, sum(GenreAmounts.amount) as Total_Sales from
+(
+select film_category.category_id, FilmInfo.amount from
+(
+select RentalInfo.inventory_id, inventory.film_id, RentalInfo.amount from
+( 
+select rental.rental_id, rental.inventory_id, payment.amount from payment
+inner join rental on
+rental.rental_id = payment.rental_id
+) as RentalInfo
+inner join inventory on
+inventory.inventory_id = RentalInfo.inventory_id
+)as FilmInfo
+inner join film_category on
+film_category.film_id = FilmInfo.film_id
+) as GenreAmounts 
+inner join category on
+category.category_id = GenreAmounts.category_id
+group by category.category_id
+ORDER BY Total_Sales DESC
+LIMIT 5;
+
+-- 8a. In your new role as an executive, you would like to have an easy way of viewing the Top five genres by gross revenue. 
+-- Use the solution from the problem above to create a view. If you haven't solved 7h, you can substitute another query to create a view.
+
+create view Top_Genres as
+select category.category_id, category.name, sum(GenreAmounts.amount) as Total_Sales from
+(
+select film_category.category_id, FilmInfo.amount from
+(
+select RentalInfo.inventory_id, inventory.film_id, RentalInfo.amount from
+( 
+select rental.rental_id, rental.inventory_id, payment.amount from payment
+inner join rental on
+rental.rental_id = payment.rental_id
+) as RentalInfo
+inner join inventory on
+inventory.inventory_id = RentalInfo.inventory_id
+)as FilmInfo
+inner join film_category on
+film_category.film_id = FilmInfo.film_id
+) as GenreAmounts 
+inner join category on
+category.category_id = GenreAmounts.category_id
+group by category.category_id
+ORDER BY Total_Sales DESC
+LIMIT 5;
+
+-- 8b. How would you display the view that you created in 8a?
+
+select *  
+from Top_Genres;
+
+-- 8c. You find that you no longer need the view top_five_genres. Write a query to delete it.
+
+drop view Top_Genres;
+
+
+
+
+
